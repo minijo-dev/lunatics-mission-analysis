@@ -73,5 +73,3 @@ if __name__ == "__main__":
     sensor4 = SunSensor(4, "Back", [1, 0.5, 1], 0, 90, 0)
     sensor5 = SunSensor(5, "Left", [0.5, 0, 1], 90, 0, 0)
     sensor6 = SunSensor(6, "Right", [0.5, 1, 1], -90, 0, 0)
-
-    sensor5.transform_to_body([0, 0, 1])
