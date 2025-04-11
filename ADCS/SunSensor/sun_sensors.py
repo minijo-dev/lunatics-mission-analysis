@@ -1,6 +1,5 @@
 import numpy as np
-
-
+from scipy.optimize import least_squares
 
 class SunSensor:
     def __init__(self, number, face, position_vector, phi, theta, psi):
@@ -43,7 +42,7 @@ class SunSensor:
             v (np array): The vector transformed into the local sensor frame, v = [x,y,z]
         """
         V = np.array(V)
-        v = self.rotmat_SB @ (V + self.pos_vec)
+        v = self.rotmat_SB @ V 
         print(f"Vector in Body frame: {V}")
         print(f"Vector in Sensor {self.number} ({self.face}) frame: {v}")
         return v
@@ -56,10 +55,14 @@ class SunSensor:
             V (np array): The vector transformed into the body frame, V = [X,Y,Z]
         """
         v = np.array(v)
-        V = self.rotmat_BS @ v - self.pos_vec
+        V = self.rotmat_BS @ v
         print(f"Vector in Sensor {self.number} ({self.face}) frame: {v}")
         print(f"Vector in Body frame: {V}")
         return V        
+
+
+# Determine triangulation by least squares regression (like Space 2 A2)
+
 
 
 if __name__ == "__main__":
