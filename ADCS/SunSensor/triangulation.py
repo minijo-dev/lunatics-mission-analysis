@@ -63,6 +63,64 @@ def sun_triangulation(sensors, readings):
 
     print(f"Triangulated Sun poisition in body frame: {sun_position}")
 
+
+
+def WLS(sensors, readings, X0, max_iter=200, tol=1e-6):
+    """
+    Performs Weighted Least Squares triangulation for Sun position.
+    
+    Args:
+        sensors (list): List of SunSensor objects.
+        readings (np array): Array of sensor readings.
+        X0 (np array): Initial guess for the Sun's position (in body frame).
+        max_iter (int): Maximum number of iterations.
+        tol (float): Tolerance for convergence.
+
+    Returns:
+        X (np array): WLS estimation of the Sun's position (in body frame) [X, Y, Z].
+    """
+
+    # Initial guess for the Sun's position
+    X = X0
+
+    for i in range(max_iter):
+        # Initialise residuals storage
+        residuals = []
+
+        # Initialise Jacobian matrix
+        H = np.zeros
+
+        # Weight matrix
+        W = np.zeros((len(sensors), len(sensors)))
+
+        for j, (sensor, S_rel) in enumerate(zip(sensors, readings)):
+            # Sensor's local z-axis in body frame
+            n_vec = sensor.rotmat_BS @ np.array([0, 0, 1])
+
+            # Sensor position in body frame
+            p = sensor.pos_vec
+
+            # Relative vector from sensor to current Sun estimate
+            r = X - p
+
+            # Weight for the sensor based on its reading
+            W[j, j] = S_rel**2      # Square of cosine (S_rel) as weight
+
+            # Residual for sensor i
+            lhs = np.dot(r, n_vec)**2
+            rhs = np.linalg.norm(r)**2 * S_rel**2
+            residuals.append(lhs - rhs)
+
+            
+
+        # Convert residuals to np array
+        residuals = np.array(residuals)
+        
+
+    
+    
+
+
 if __name__ == "__main__":
     
     # Define sensor positions and rotation matrices
