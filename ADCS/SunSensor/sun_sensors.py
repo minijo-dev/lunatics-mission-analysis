@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.optimize import least_squares
 
 class SunSensor:
     def __init__(self, number, face, position_vector, phi, theta, psi):
@@ -59,9 +58,6 @@ class SunSensor:
         print(f"Vector in Sensor {self.number} ({self.face}) frame: {v}")
         print(f"Vector in Body frame: {V}")
         return V        
-
-
-# Determine triangulation by least squares regression (like Space 2 A2)
 
 
 

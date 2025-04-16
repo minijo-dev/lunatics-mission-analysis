@@ -83,17 +83,17 @@ def WLS(sensors, readings, X0, max_iter=200, tol=1e-6):
     # Initial guess for the Sun's position
     X = X0
 
-    for i in range(max_iter):
+    for iteration in range(max_iter):
         # Initialise residuals storage
-        residuals = []
+        residuals = np.zeros((len(readings), 1))
 
         # Initialise Jacobian matrix
-        H = np.zeros
+        H = np.zeros((len(sensors), 3))
 
-        # Weight matrix
+        # Initialise weight matrix
         W = np.zeros((len(sensors), len(sensors)))
 
-        for j, (sensor, S_rel) in enumerate(zip(sensors, readings)):
+        for i, (sensor, S_rel) in enumerate(zip(sensors, readings)):
             # Sensor's local z-axis in body frame
             n_vec = sensor.rotmat_BS @ np.array([0, 0, 1])
 
@@ -101,22 +101,42 @@ def WLS(sensors, readings, X0, max_iter=200, tol=1e-6):
             p = sensor.pos_vec
 
             # Relative vector from sensor to current Sun estimate
-            r = X - p
+            r_vec = X - p
 
             # Weight for the sensor based on its reading
-            W[j, j] = S_rel**2      # Square of cosine (S_rel) as weight
+            W[i, i] = S_rel**2      # Square of cosine (S_rel) as weight
 
-            # Residual for sensor i
-            lhs = np.dot(r, n_vec)**2
-            rhs = np.linalg.norm(r)**2 * S_rel**2
-            residuals.append(lhs - rhs)
+            # Gradient of the residual w.r.t. x, y, z
+            norm_r = np.linalg.norm(r_vec)
+            grad_x = (2 * (np.dot(r_vec, n_vec) * r_vec[0] - norm_r**2 * n_vec[0])) / norm_r**3
+            grad_y = (2 * (np.dot(r_vec, n_vec) * r_vec[1] - norm_r**2 * n_vec[1])) / norm_r**3
+            grad_z = (2 * (np.dot(r_vec, n_vec) * r_vec[2] - norm_r**2 * n_vec[2])) / norm_r**3
+
+            H[i, :] = [grad_x, grad_y, grad_z]
+
+            # # Residual for sensor i
+            # lhs = np.dot(r_vec, n_vec)**2
+            # rhs = np.linalg.norm(r_vec)**2 * S_rel**2
+            # residuals[i] = lhs - rhs
 
             
+        # Solve the WLS system
+        HTW = H.T @ W
+        try: 
+            dx = np.linalg.inv(HTW @ H) @ HTW @ residuals
+        except np.linalg.LinAlgError:
+            print("Singular matrix, skipping update...")
+            break
 
-        # Convert residuals to np array
-        residuals = np.array(residuals)
+        # Update Sun's position estimate
+        X = X - dx
         
+        # Check for convergence
+        if np.linalg.norm(dx) < tol:
+            print(f"Convergence achieved after {iteration + 1} iterations.")
+            break
 
+    return X
     
     
 
@@ -129,11 +149,15 @@ if __name__ == "__main__":
     sensor3 = SunSensor(3, "Front", [0, 0.5, 1], 0, -90, 0)
     sensor4 = SunSensor(4, "Back", [1, 0.5, 1], 0, 90, 0)
     sensor5 = SunSensor(5, "Left", [0.5, 0, 1], 90, 0, 0)
-    sensor6 = SunSensor(6, "Right", [0.5, 1, 1], -90, 0, 0)
+    # sensor6 = SunSensor(6, "Right", [0.5, 1, 1], -90, 0, 0)
 
-    sensors = [sensor1, sensor2, sensor3, sensor4, sensor5, sensor6]
+    # sensors = [sensor1, sensor2, sensor3, sensor4, sensor5, sensor6]
+    sensors = [sensor1, sensor2, sensor3, sensor4, sensor5]
 
     # Test readings from each of the sensors, S_rel
-    readings = np.array([0.76, 0.1, 0.5, 0.4, 0.84, 0.2])
+    # readings = np.array([0.76, 0.1, 0.5, 0.4, 0.84, 0.2])
+    readings = np.array([0.76, 0.1, 0.5, 0.4, 0.84])
 
-    sun_triangulation(sensors, readings)
+    # sun_triangulation(sensors, readings)
+    sun_position = WLS(sensors, readings, np.array([10, 10, 10]))
+    print(f"Estimated Sun position: {sun_position}")
