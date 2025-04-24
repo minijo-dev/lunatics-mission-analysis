@@ -169,13 +169,18 @@ def expected_readings(sensors, sun_pos, max_FOV=80):
         phi = np.arccos(cos_phi)
 
         # If the angle is within the sensor's FOV, calculate S_rel
-        if phi < max_FOV:
+        if abs(phi) < max_FOV:
             readings[i] = cos_phi
         else:
             readings[i] = 0
 
     return readings
 
+
+def estimate_sun(sensors, readings, max_FOV=80):
+    """
+    Estimate the Sun's position based on sensor 
+    """
 
 
 if __name__ == "__main__":
@@ -195,5 +200,5 @@ if __name__ == "__main__":
     # readings = np.array([0.8, 0.2, 0.9, 0.4, 0.6])  # Examples
 
     init_guess = np.array([10, 10, 10])
-    sun_pos = WLS(sensors, example_readings, init_guess)
-    print(f"Estimated Sun Position: {sun_pos}")
+    # sun_pos = WLS(sensors, example_readings, init_guess)
+    # print(f"Estimated Sun Position: {sun_pos}")
