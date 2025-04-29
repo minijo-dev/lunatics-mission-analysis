@@ -42,6 +42,7 @@ class SunSensor:
         Returns:
             v (np array): The vector transformed into the local sensor frame, v = [x,y,z]
         """
+
         V = np.array(V)
         v = self.rotmat_SB @ V 
         print(f"Vector in Body frame: {V}")
@@ -55,6 +56,7 @@ class SunSensor:
         Returns:
             V (np array): The vector transformed into the body frame, V = [X,Y,Z]
         """
+        
         v = np.array(v)
         V = self.rotmat_BS @ v
         print(f"Vector in Sensor {self.number} ({self.face}) frame: {v}")
@@ -194,7 +196,7 @@ if __name__ == "__main__":
 
     sensors = [sensor1, sensor2, sensor3, sensor4, sensor5]
 
-    example_readings = expected_readings(sensors, np.array([1000, 1000, 1000]))
+    example_readings = expected_readings(sensors, np.array([1e6, 1e6, 1e6]))
     print(f"Expected readings: {example_readings}")
 
     # readings = np.array([0.8, 0.2, 0.9, 0.4, 0.6])  # Examples
