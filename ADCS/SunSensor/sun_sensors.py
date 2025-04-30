@@ -156,10 +156,14 @@ def find_sun_direction(sensors, readings, X0, max_iter=200, tol=1e-6, n_theta=10
             cones.append(sensor_cone(sensor, readings[i]))
 
         # Design matrix (H)
-        # TODO
+        H = []
+        for i in range(N):
+            for u in cones[i]:
+                H.append(u)
+        H = np.array(H)
 
         # Measurement vector (Y)
-        # TODO
+        Y = np.array([u for u_cone in cones for u in u_cone])
         
 
 
