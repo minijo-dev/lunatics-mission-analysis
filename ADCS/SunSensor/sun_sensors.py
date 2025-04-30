@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import least_squares
+# from scipy.optimize import least_squares
 class SunSensor:
     def __init__(self, number, face, position_vector, phi, theta, psi):
         """SunSensor class to represent a sun sensor on a CubeSat.
@@ -35,6 +35,7 @@ class SunSensor:
 
         self.z_in_body = self.rotmat_BS @ np.array([0, 0, 1])
 
+
     def transform_to_sensor(self, V):
         """Transform a vector from the body frame to the sensor frame.
         Args:
@@ -61,7 +62,118 @@ class SunSensor:
         V = self.rotmat_BS @ v
         print(f"Vector in Sensor {self.number} ({self.face}) frame: {v}")
         print(f"Vector in Body frame: {V}")
-        return V        
+        return V       
+
+    def get_normal(self):
+        """Get the normal vector (z-axis, cone axis) of the sensor in the body frame."""
+        return self.z_in_body
+
+
+def find_sun_direction(sensors, readings, X0, max_iter=200, tol=1e-6, n_theta=100):
+    """A function that estimates the Sun's direction vector using readings from multiple light sensors in WLS.
+    Args:
+        sensors (list): List of SunSensor objects.
+        readings (np array): Array of sensor readings.
+        X0 (np array): Initial guess for the Sun's position (in body frame).
+        max_iter (int): Maximum number of iterations.
+        tol (float): Tolerance for convergence.
+        n_theta (int): Number of theta values to sample in the cone.
+    Returns:
+        X (np array): WLS estimation of the Sun's position (in body frame) [X, Y, Z].
+    """
+
+    def sensor_cone(sensor, S_rel):
+        """Calculates the cone of potential Sun direction vectors based on sensor reading.
+        Args:
+            sensor (SunSensor object): The sensor object.
+            S_rel (float): The reading from that sensor.
+        Returns:
+            u_cone (np array): Array of direction vectors in the body frame.
+        """
+
+        # Initialise cone array
+        u_cone = []
+
+        # Calculate half-angle of cone (phi)
+        phi = np.arccos(S_rel)      # (radians)
+
+        for theta in np.linspace(0, 2*np.pi, n_theta):
+            u_sensor = np.array([
+                np.sin(phi) * np.cos(theta),    # x-component
+                np.sin(phi) * np.sin(theta),    # y-component
+                np.cos(phi)                     # z-component
+            ])
+
+            # Normalise the vector
+            u_sensor /= np.linalg.norm(u_sensor)
+
+            # Transform from sensor frame to body frame
+            u_body = sensor.transform_to_body(u_sensor)
+
+            # Append to direction vector cone array
+            u_cone.append(u_body)
+
+        return np.array(u_cone)
+    
+
+    def residual_func(X, sensor, u_cone):
+        """Calculates the residual (perpendicular distance) for the WLS function.
+        Args:
+            X (np array): Current estimate of Sun's direction vector in body frame.
+            sensor (SunSensor object): The sensor object.
+            u_cone (np array): Array of direction vectors in the body frame.
+        Returns:
+            residuals (np array): Perpendicular distance residual for each direction vector.
+        """
+
+        # Sensor position in body frame
+        p_vec = sensor.pos_vec
+
+        residuals = []
+        for u in u_cone:
+            cross_prod = np.cross((X - p_vec), u)
+            residual = np.linalg.norm(cross_prod) / np.linalg.norm(u)
+
+            # Append the residual
+            residuals.append(residual)
+
+        return np.array(residuals)
+    
+
+    def build_WLS_matrices(sensors, readings):
+        """Build the H, W, and Y matrices for the WLS function."""
+
+        # Number of sensors (should be 3)
+        N = len(sensors)
+
+        # Weighting matrix (W)
+        W = np.diag(readings**2)
+        W /= np.linalg.trace(W)
+
+        # Cones for each sensor
+        cones = []
+        for i, sensor in enumerate(sensors):
+            cones.append(sensor_cone(sensor, readings[i]))
+
+        # Design matrix (H)
+        # TODO
+
+        # Measurement vector (Y)
+        # TODO
+        
+
+
+    # Select only three highest readings
+    three_sensors = sorted(zip(sensors, readings), key=lambda x: x[1], reverse=True)[:3]
+    sensors = [sensor for sensor, _ in three_sensors]
+    readings = np.array([reading for _, reading in three_sensors])
+
+    
+
+
+
+
+
 
 
 
@@ -179,12 +291,6 @@ def expected_readings(sensors, sun_pos, max_FOV=80):
     return readings
 
 
-def estimate_sun(sensors, readings, max_FOV=80):
-    """
-    Estimate the Sun's position based on sensor 
-    """
-
-
 if __name__ == "__main__":
 
     sensor1 = SunSensor(1, "Top", [0.05, 0.05, 0.2], 0, 0, 0)
@@ -199,8 +305,10 @@ if __name__ == "__main__":
     example_readings = expected_readings(sensors, np.array([1e6, 1e6, 1e6]))
     print(f"Expected readings: {example_readings}")
 
-    # readings = np.array([0.8, 0.2, 0.9, 0.4, 0.6])  # Examples
+    readings = np.array([0.8, 0.2, 0.9, 0.4, 0.6])  # Examples
 
-    init_guess = np.array([10, 10, 10])
+    find_sun_direction(sensors, readings, np.array([1, 0, 0]))
+
+    # init_guess = np.array([10, 10, 10])
     # sun_pos = WLS(sensors, example_readings, init_guess)
     # print(f"Estimated Sun Position: {sun_pos}")
