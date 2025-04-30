@@ -1,17 +1,16 @@
-## SPECTROGRAPH RESULTS PLOTTING
-# Using the test file 
+"""
+AERO4701 Space Engineering 3
+Lunar Atmospheric Investigations with CubeSats (LUNATICS)
+
+Plotting the spectrum data from a CSV file.
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy as sc
 from pathlib import Path
-
-
-plt.rcParams.update({
-    "font.family": "serif",  
-    "font.serif": ["Times New Roman"], 
-})
+import plotting
 
 
 def plot_spectrum(filename, rows_to_plot=None):
@@ -51,7 +50,7 @@ def plot_spectrum(filename, rows_to_plot=None):
         colours = [normalise_rgb(colour) for colour in colours]
 
         # Plot the spectrum
-        fig, ax = plt.subplots(figsize=(6,4))
+        fig, ax = plt.subplots(figsize=(6,3))
         ax.scatter(wavelength_range, spectrum_interp, c=colours)
 
         # Plot details
@@ -59,6 +58,8 @@ def plot_spectrum(filename, rows_to_plot=None):
         plt.ylabel('Reading (nW/cm²/count)')
         plt.ylim([0, 1.1 * max(spectrum_interp)])
         plt.grid(visible=True, which='both', color='grey', linestyle='--', linewidth=0.5, alpha=0.5)
+        plt.subplots_adjust(left=0.1, right=0.97, top=0.97, bottom=0.18)
+
 
     
     plt.show()
@@ -143,8 +144,10 @@ def normalise_rgb(rgb):
 
     return r, g, b
 
+
 if __name__ == "__main__":
     filepath = Path(__file__).parent
     filename = filepath / 'spec_values.csv'
 
+    plotting.startup_plotting(font_size=14, line_width=1.5, output_dpi=600, tex_backend=True)
     plot_spectrum(filename, [2])
