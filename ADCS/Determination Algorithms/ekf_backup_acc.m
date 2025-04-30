@@ -1,11 +1,34 @@
+%% Graphing Set up %%
+% graphing setup code is obtained from 
+
+myred           = [216 30 49]/255;
+myblue          = [27 99 157]/255;
+myblack         = [0 0 0]/255;
+mygreen         = [0 128 0]/255;
+mycyan          = [2 169 226]/255;
+myyellow        = [251 194 13]/255;
+mygray          = [89 89 89]/255;
+
+set(groot,'defaultAxesColorOrder',[myblack;myblue;myred;mygreen;myyellow;mycyan;mygray]);
+
+alw             = 1;                        % AxesLineWidth
+fsz             = 11;                       % Fontsize
+lw              = 2;                        % LineWidth
+msz             = 40;                       % MarkerSize
+fn              = 'Times New Roman';
+
+set(0,'defaultLineLineWidth',lw);           % set the default line width to lw
+set(0,'defaultLineMarkerSize',msz);         % set the default line marker size to msz
+set(0,'defaultLineLineWidth',lw);           % set the default line width to lw
+set(0,'defaultLineMarkerSize',msz); 
+
 
 %% Initial values
 x0 = [1,0,0,0,0,0,0.01];
-% x0 = [0,0,0.6,0.8,0.25,0.3,-0.2];
 P0 = eye(7);
 
 x_true0 = [0, 0, 0.6, 0.8, 0.25, 0.3, -0.2];
-
+% x_true0 = [0.7, 0, -0.7, 0, 0.1, -0.05, -0.3];
 %% Simulation timing and Setup
 Ts = 500; % sample time (sec)
 n = 1000; % number of time steps
@@ -25,6 +48,9 @@ s_known = [1,0,0];
 % known gravity vector (ECI)
 a_known = [-1, 0, 0];
 
+% known magnetic vector (ECI)
+m_known = [0, 0, 1];
+
 %% Constants
 % j = [0.004433; 0.004433; 0.01922]; 
 j = [0.0017, 0.0015, 0.0022];
@@ -43,7 +69,7 @@ Q = eye(7)*sigmaQ^2;
 % sensor noise (5x5)
 sigmaGyro = 0.01;
 sigmaSun = 0.35;
-sigmaAcc = 0.01;
+sigmaAcc = 0.1;
 R = eye(9);
 R(1:3,:) = R(1:3,:) * sigmaGyro^2;
 R(4:6,:) = R(4:6,:) * sigmaSun^2;
