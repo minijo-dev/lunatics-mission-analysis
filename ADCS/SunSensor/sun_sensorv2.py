@@ -110,29 +110,31 @@ def find_sun(sensors, readings, X0, max_iter=500, tol=1e-6, learning_rate=0.1):
         residuals = Y - np.dot(H, Xhat)
 
         # Compute gradient
-        gradient = 2 * np.dot(H.T, W @ residuals)
+        gradient = -2 * np.dot(H.T, W @ residuals)
 
         # Direction update
-        dx = learning_rate * gradient
+        dX = learning_rate * gradient
 
         # Check if update is significant enough to continue
-        if np.sum(np.abs(dx)) > tol:
+        if np.sum(np.abs(dX)) > tol:
             # Update direction vector
-            Xhat += dx
+            Xhat -= dX
             Xhat /= np.linalg.norm(Xhat)   # Normalise
         else:
             break
 
     print(f"Estimated sun direction vector: {Xhat} (after {iter_count} iterations)")
-    
+
     return Xhat
 
 
-def expected_readings(sensors, sun_vec, max_FOV=80):
+def expected_readings(sensors, sun_vec, exact=True, noise=0, max_FOV=80):
     """Compute the expected readings of the sensors based on the sun direction vector.
     Args:
         sensors (list): List of SunSensor objects.
         sun_vec (np array): The sun direction vector in the body frame.
+        exact (bool): If True, the exact readings are computed. If False, the readings are affected by noise.
+        noise (float): The magnitude of noise to be added to the readings.
         max_FOV (float): The maximum field of view of the sensors (degrees).
     Returns:
         readings (np array): The expected readings of the sensors.
