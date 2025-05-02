@@ -2,7 +2,7 @@
 AERO4701 Space Engineering 3
 Lunar Atmospheric Investigations with CubeSats (LUNATICS)
 
-
+A class and functions to simulate a sun sensor system on a CubeSat.
 """
 
 import numpy as np
@@ -76,7 +76,7 @@ class SunSensor:
 
 
 
-def find_sun(sensors, readings, X0, max_iter=500, tol=1e-6, learning_rate=0.1):
+def find_sun(sensors, readings, X0, max_iter=1000, tol=1e-6, learning_rate=0.1):
     """"""
 
     # Select top three sensors based on readings
@@ -85,7 +85,7 @@ def find_sun(sensors, readings, X0, max_iter=500, tol=1e-6, learning_rate=0.1):
     readings = readings[sorted_idx]
 
     # Check three sensors actually have values
-    if readings[0] == 0 or readings[1] == 0 or readings[2] == 0:
+    if readings[0] < 0.1 or readings[1] < 0.1 or readings[2] < 0.1:
         print("Not enough valid readings from sensors.")
         return None
 
@@ -128,7 +128,7 @@ def find_sun(sensors, readings, X0, max_iter=500, tol=1e-6, learning_rate=0.1):
     return Xhat
 
 
-def expected_readings(sensors, sun_vec, exact=True, noise=0, max_FOV=80):
+def expected_readings(sensors, sun_vec, exact=True, noise=0.001, max_FOV=80):
     """Compute the expected readings of the sensors based on the sun direction vector.
     Args:
         sensors (list): List of SunSensor objects.
@@ -160,10 +160,20 @@ def expected_readings(sensors, sun_vec, exact=True, noise=0, max_FOV=80):
         if np.abs(phi) < max_FOV:
             # Compute S_rel
             readings[i] = np.cos(phi)
+            if not exact:
+                # Add noise to the readings
+                readings[i] += np.random.normal(0, noise)
+                # Ensure readings are non-negative
+                readings[i] = max(0, readings[i])
         else:
-            readings[i] = 0
-        
-    print(f"Expected readings for Sun vector {sun_vec}: {readings}")
+            readings[i] = np.random.normal(0, noise)
+            readings[i] = max(0, readings[i])
+            
+    if exact: 
+        print(f"Expected readings for Sun vector {sun_vec}: {readings}")
+    else:
+        print(f"Noisy expected readings for Sun vector {sun_vec}: {readings}")
+    # print(f"-------angle: {np.rad2deg(np.arccos(readings))}")
 
     return readings
     
@@ -179,6 +189,9 @@ if __name__ == "__main__":
 
 
     sensors = [sensor1, sensor2, sensor3, sensor4, sensor5]
-    example_readings = expected_readings(sensors, np.array([1, 2, 1]))
 
+    example_readings = expected_readings(sensors, np.array([-2, 3, 1]))
     find_sun(sensors, example_readings, np.array([1, 0, 0]))
+
+    noisy_readings = expected_readings(sensors, np.array([-2, 3, 1]), exact=False)
+    find_sun(sensors, noisy_readings, np.array([1, 0, 0]))
