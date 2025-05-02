@@ -50,19 +50,20 @@ def plot_spectrum(filename, rows_to_plot=None):
         # Normalise RGB values
         colours = [normalise_rgb(colour) for colour in colours]
 
-        # Plot the spectrum w/ intensities
-        fig, ax0 = plt.subplots(figsize=(6,3))
-        ax0.scatter(wavelength_range, spectrum_interp, c=colours)
+        # Initialise figure
+        fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(6, 4),
+                                       sharex=True, 
+                                       gridspec_kw={'height_ratios': [2, 1]})
 
-        # Plot details
-        ax0.set_xlabel('Wavelength (nm)')
+        # Plot the intensity spectrum
+        ax0.scatter(wavelength_range, spectrum_interp, c=colours, s=10)
         ax0.set_ylabel('Reading (uW/cm²/count)')
+        ax0.set_xlim([400, max(wavelength_range)])
         ax0.set_ylim([0, 1.1 * max(spectrum_interp)])
+        # ax0.set_xticklabels([])
         ax0.grid(visible=True, which='both', color='grey', linestyle='--', linewidth=0.5, alpha=0.5)
-        plt.subplots_adjust(left=0.1, right=0.97, top=0.97, bottom=0.18)
 
         # Plot absorption spectrum
-        fig, ax1 = plt.subplots(figsize=(6,2))
         for j, intensity in enumerate(normalised_spectrum):
             colour = colours[j]
             ax1.axvline(wavelength_range[j], color=colour, alpha=intensity, lw=1)
@@ -71,8 +72,8 @@ def plot_spectrum(filename, rows_to_plot=None):
         ax1.set_xlim([400, max(wavelength_range)])
         ax1.grid(visible=False)
         ax1.set_xlabel('Wavelength (nm)')
-
-
+    
+    plt.subplots_adjust(left=0.1, right=0.97, top=0.97, bottom=0.18, hspace=0.025)
     plt.tight_layout()
     plt.show()
 
