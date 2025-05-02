@@ -40,8 +40,9 @@ def plot_spectrum(filename, rows_to_plot=None):
         interp = sc.interpolate.PchipInterpolator(wavelengths, spectrum)
         
         # Create new wavelength range for interpolation
-        wavelength_range = np.linspace(min(wavelengths), max(wavelengths), 1000)
+        wavelength_range = np.linspace(min(wavelengths), max(wavelengths), 5000)
         spectrum_interp = interp(wavelength_range)
+        normalised_spectrum = spectrum_interp / max(spectrum_interp)
 
         # Convert wavelengths to RGB
         # colours = [normalise_rgb(wavelength_to_rgb(w)) for w in wavelength_range]
@@ -49,19 +50,30 @@ def plot_spectrum(filename, rows_to_plot=None):
         # Normalise RGB values
         colours = [normalise_rgb(colour) for colour in colours]
 
-        # Plot the spectrum
-        fig, ax = plt.subplots(figsize=(6,3))
-        ax.scatter(wavelength_range, spectrum_interp, c=colours)
+        # Plot the spectrum w/ intensities
+        fig, ax0 = plt.subplots(figsize=(6,3))
+        ax0.scatter(wavelength_range, spectrum_interp, c=colours)
 
         # Plot details
-        plt.xlabel('Wavelength (nm)')
-        plt.ylabel('Reading (nW/cm²/count)')
-        plt.ylim([0, 1.1 * max(spectrum_interp)])
-        plt.grid(visible=True, which='both', color='grey', linestyle='--', linewidth=0.5, alpha=0.5)
+        ax0.set_xlabel('Wavelength (nm)')
+        ax0.set_ylabel('Reading (uW/cm²/count)')
+        ax0.set_ylim([0, 1.1 * max(spectrum_interp)])
+        ax0.grid(visible=True, which='both', color='grey', linestyle='--', linewidth=0.5, alpha=0.5)
         plt.subplots_adjust(left=0.1, right=0.97, top=0.97, bottom=0.18)
 
+        # Plot absorption spectrum
+        fig, ax1 = plt.subplots(figsize=(6,2))
+        for j, intensity in enumerate(normalised_spectrum):
+            colour = colours[j]
+            ax1.axvline(wavelength_range[j], color=colour, alpha=intensity, lw=1)
+        ax1.set_facecolor('black')
+        ax1.get_yaxis().set_visible(False)
+        ax1.set_xlim([400, max(wavelength_range)])
+        ax1.grid(visible=False)
+        ax1.set_xlabel('Wavelength (nm)')
 
-    
+
+    plt.tight_layout()
     plt.show()
 
 
