@@ -22,10 +22,15 @@ def plot_spectrum(filename, rows_to_plot=None):
         rows_to_plot (list): List of row indices to plot.
     """
 
+    # Read CSV file
     data = pd.read_csv(filename, sep=',')
 
     # Extract wavelengths from header row
     wavelengths = [int(col.strip('nm')) for col in data.columns]
+
+    # For Gaussian
+    FWHM = 20
+    sigma = FWHM / (2 * np.sqrt(2 * np.log(2)))
 
     # Filter dataframe for specified rows
     if rows_to_plot is not None:
@@ -53,15 +58,21 @@ def plot_spectrum(filename, rows_to_plot=None):
         # Initialise figure
         fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(6, 4),
                                        sharex=True, 
-                                       gridspec_kw={'height_ratios': [2, 1]})
+                                       gridspec_kw={'height_ratios': [2, 1], 'hspace': 0})
+        ax0.grid(visible=True, which='both', color='grey', linestyle='--', linewidth=0.5, alpha=0.5)
+
+        # Plot Gaussian
+        for j, intensity in enumerate(spectrum):
+            mu = wavelengths[j]
+            A = intensity
+            gauss_spectrum = gaussian(wavelength_range, A, mu, sigma)
+            ax0.plot(wavelength_range, gauss_spectrum, color='black', linestyle='--', alpha=0.5, lw=1)
 
         # Plot the intensity spectrum
         ax0.scatter(wavelength_range, spectrum_interp, c=colours, s=10)
         ax0.set_ylabel('Reading (uW/cm²/count)')
         ax0.set_xlim([400, max(wavelength_range)])
         ax0.set_ylim([0, 1.1 * max(spectrum_interp)])
-        # ax0.set_xticklabels([])
-        ax0.grid(visible=True, which='both', color='grey', linestyle='--', linewidth=0.5, alpha=0.5)
 
         # Plot absorption spectrum
         for j, intensity in enumerate(normalised_spectrum):
@@ -157,6 +168,17 @@ def normalise_rgb(rgb):
 
     return r, g, b
 
+
+def gaussian(x, A, mu, sigma):
+    """Gaussian function.
+    Args:
+        x (np.array): Array of x values [wavelengths].
+        A (float): Amplitude of the Gaussian [intensity].
+        mu (float): Mean of Gaussian [central wavelength].
+        sigma (float): Standard deviation of Gaussian [from FWHM].
+    """
+
+    return A * np.exp(-((x - mu)**2) / (2 * sigma**2))
 
 if __name__ == "__main__":
     filepath = Path(__file__).parent
