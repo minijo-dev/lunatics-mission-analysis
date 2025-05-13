@@ -128,7 +128,7 @@ def find_sun(sensors, readings, X0, max_iter=1000, tol=1e-6, learning_rate=0.1):
     return Xhat
 
 
-def expected_readings(sensors, sun_vec, exact=True, noise=0.001, max_FOV=80):
+def expected_readings(sensors, sun_vec, exact=True, noise=0.01, max_FOV=80):
     """Compute the expected readings of the sensors based on the sun direction vector.
     Args:
         sensors (list): List of SunSensor objects.
@@ -177,6 +177,18 @@ def expected_readings(sensors, sun_vec, exact=True, noise=0.001, max_FOV=80):
 
     return readings
     
+def pointing_accuracy(v_true, v_est):
+    """Compute the pointing accuracy of the resulting sun direction vector."""
+    # Find angle between true and estimated vectors
+    dot_product = np.dot(v_true, v_est)
+    true_mag = np.linalg.norm(v_true)
+    est_mag = np.linalg.norm(v_est)
+    angle = np.arccos(dot_product / (true_mag * est_mag))
+    # Convert to degrees
+    angle = np.rad2deg(angle)
+    print(f"Pointing accuracy: {angle} degrees")
+    return angle
+
 
 if __name__ == "__main__":
 
@@ -190,8 +202,13 @@ if __name__ == "__main__":
 
     sensors = [sensor1, sensor2, sensor3, sensor4, sensor5]
 
-    example_readings = expected_readings(sensors, np.array([-2, 3, 1]))
-    find_sun(sensors, example_readings, np.array([1, 0, 0]))
+    test_dir = np.array([1, 1, 1])
 
-    noisy_readings = expected_readings(sensors, np.array([-2, 3, 1]), exact=False)
-    find_sun(sensors, noisy_readings, np.array([1, 0, 0]))
+    example_readings = expected_readings(sensors, test_dir)
+    clean_est = find_sun(sensors, example_readings, np.array([1, 0, 0]))
+
+    noisy_readings = expected_readings(sensors, test_dir, exact=False)
+    noise_est = find_sun(sensors, noisy_readings, np.array([1, 0, 0]))
+
+    pointing_accuracy(test_dir, clean_est)
+    pointing_accuracy(test_dir, noise_est)
