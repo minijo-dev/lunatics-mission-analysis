@@ -1,4 +1,9 @@
-// ekf_main.cpp
+
+// To compile atm
+//g++ ads_integrated.cpp ads_helpers.cpp -I /usr/include/eigen3 -o ads_program
+
+
+
 #include <iostream>
 #include <Eigen/Dense>
 #include <cmath>
@@ -10,11 +15,11 @@ using namespace Eigen;
 using namespace std;
 
 int main() {
-    """ Setup Values - Variable """
+    // Setup Values - Variable //
     double lat = -33.88893628858434 * M_PI / 180.0;
     double lon = 151.19446182380247 * M_PI / 180.0;
     double alt = 19.8;
-    """"""
+    ////
 
     Vector3d R_ECI = eci_vector(lat, lon);
     Vector3d a_known = 9.81 * R_ECI.normalized();  // known acceleration at site
@@ -23,10 +28,10 @@ int main() {
 
     // Constants
     Constants Constant;
-    Constant.a << 0.5, 0.5;
-    Constant.J = (Matrix3d() << 0.0017, 0, 0,
-                                 0, 0.0015, 0,
-                                 0, 0, 0.0022).finished();
+    Constant.a << (Vector2d() << 0.5, 0.5).finished();
+    Constant.J << 0.0017, 0, 0,
+                    0, 0.0015, 0,
+                    0, 0, 0.0022;;
     Constant.Q = MatrixXd::Identity(7, 7) * pow(0.01, 2);
     Constant.sigma_tau = 1e-7;
     Constant.sigma_q = 1e-8;
@@ -40,27 +45,27 @@ int main() {
     // Initialisation
     int count = 0;
 
-    """ Time Setup - Variable """
+    // Time Setup - Variable //
     int iter = 10000;
     double dt = 0.1;
-    """"""
+    ////
 
-    """ Starting States - Variable """
+    // Starting States - Variable //
     VectorXd init_state_true(7);
     init_state_true << 0, 0, 0.6, 0.8, 0.05, -0.1, 0.15;
 
     VectorXd nts_state(7);
     nts_state << 1, 0, 0, 0, 0.1, 0.1, 0.1;
     MatrixXd nts_P = MatrixXd::Identity(7, 7);
-    """"""
+    ////
 
     // Declaring variables
     VectorXd init_state(7);
     MatrixXd init_P(7, 7);
 
-    """ QUEST Version - Variable """
-    std:: bool QUEST_simp = true;
-    """"""
+    // QUEST Version - Variable //
+    bool simp = false;
+    ////
 
     // std::vector<double> q0_plot{1};
     // std::vector<double> q0_true_plot{0};
@@ -76,19 +81,21 @@ int main() {
         
         Matrix3d C = inertial2body(nts_state_true);
 
-        """ Fake Sensor Inputs"""
+        // Fake Sensor Inputs//
         Vector3d a_sensor = C * a_known + Vector3d(noise(generator), noise(generator), noise(generator));
         Vector3d m_sensor = C * m_known + Vector3d(noise(generator), noise(generator), noise(generator));
         Vector3d g_sensor = nts_state_true.tail<3>() + Vector3d(noise(generator), noise(generator), noise(generator));
-        """"""
+        ////
 
         // q0_true_plot.push_back(nts_state_true(2)); // q2
 
         init_state_true = nts_state_true;
 
 
+        Eigen::Vector4d quest_quat;
+
         if (count == 0) {
-            if QUEST_simp == true
+            if (simp == true)
                 Vector4d quest_quat = QUEST_simp(a_known, m_known, a_sensor, m_sensor, Constant);
             else
                 Vector4d quest_quat = QUEST_full(a_known, m_known, a_sensor, m_sensor, Constant);
@@ -101,15 +108,12 @@ int main() {
             init_P = nts_P;
         }
 
-        std::tie(nts_state, nts_P) = ekf(init_state, init_P, a_known, m_known, a_sensor, m_sensor, g_sensor, dt, Constant);
+        EKFResult ekf_result = ekf(init_state, init_P, a_known, m_known, a_sensor, m_sensor, g_sensor, dt, Constant);
+        nts_state = ekf_result.nts_state;
+        nts_P = ekf_result.nts_P;
 
         // q0_plot.push_back(nts_state(2)); // q2
         // time.push_back(time.back() + dt);
     }
-
-    // Plotting not included — add with matplotlib-cpp if desired
-    cout << "Final q2 estimated: " << nts_state(2) << endl;
-    cout << "Final q2 true: " << q0_true_plot.back() << endl;
-
     return 0;
 }
