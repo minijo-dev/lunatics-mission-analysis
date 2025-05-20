@@ -25,7 +25,7 @@ Matrix3d body2inertial(const VectorXd& state) {
     return inertial2body(state).transpose();
 }
 
-""" QUEST Functions """
+// QUEST Functions //
 Vector4d QUEST_simp(const Vector3d& a_ref, const Vector3d& m_ref,
                const Vector3d& a_meas, const Vector3d& m_meas,
                const Constants& Constant) {
@@ -68,12 +68,12 @@ Vector4d QUEST_full(const Vector3d& a_known, const Vector3d& m_known,
                const Vector3d& a_sensor, const Vector3d& m_sensor,
                const Constants& Constant) {
     // Build attitude profile matrix B
-    Matrix3d B = Constant.a1 * a_sensor * a_known.transpose() + Constant.a2 * m_sensor * m_known.transpose();
+    Matrix3d B = Constant.a[0] * a_sensor * a_known.transpose() + Constant.a[1] * m_sensor * m_known.transpose();
 
     // Compute helper matrices and vectors
     double sigma = B.trace();
     Matrix3d S = B + B.transpose();
-    Vector3d Z = Constant.a1 * a_sensor.cross(a_known) + Constant.a2 * m_sensor.cross(m_known);
+    Vector3d Z = Constant.a[0] * a_sensor.cross(a_known) + Constant.a[1] * m_sensor.cross(m_known);
 
     // Calculate characteristic equation parameters
     double nu = 0.5 * S.trace();
@@ -120,9 +120,9 @@ Vector4d QUEST_full(const Vector3d& a_known, const Vector3d& m_known,
 
     return q;
 }
-""""""
+////
 
-"""EKF Helpers Functions"""
+//EKF Helpers Functions//
 
 Matrix4d Omega_func(const Vector3d& omega) {
     Matrix4d Omega;
@@ -130,23 +130,24 @@ Matrix4d Omega_func(const Vector3d& omega) {
               omega(0), 0,       omega(2), -omega(1),
               omega(1), -omega(2), 0,       omega(0),
               omega(2), omega(1), -omega(0), 0;
+    return Omega;
 
 }
 
-Eigen::Matrix<double, 4, 3> Xi_func(const std::vector<double>& init_state) {
+Eigen::Matrix<double, 4, 3> Xi_func(const Eigen::VectorXd& init_state) {
     Vector4d q = init_state.head<4>();
     double q0 = q(0), q1 = q(1), q2 = q(2), q3 = q(3);
 
     Eigen::Matrix<double, 4, 3> Xi;
-    Xi << -q1 -q2 -q3,
-          q0 -q3 q2,
-          q3 q0 -q1,
-          -q2 q1 q0, ;
+    Xi << -q1, -q2, -q3,
+          q0, -q3, q2,
+          q3, q0, -q1,
+          -q2, q1, q0 ;
 
     return Xi;
 }
 
-Eigen::Matrix3d Pi_func(const std::vector<double>& init_state, const Constants& Constant){
+Eigen::Matrix3d Pi_func(const Eigen::VectorXd& init_state, const Constants& Constant){
 
     Matrix3d J = Constant.J;
     double J1 = J(0, 0), J2 = J(1, 1), J3 = J(2, 2);
@@ -154,6 +155,9 @@ Eigen::Matrix3d Pi_func(const std::vector<double>& init_state, const Constants& 
     double J23 = J2 - J3;
     double J31 = J3 - J1;
     double J12 = J1 - J2;
+
+    Vector3d w = init_state.tail<3>();
+    double w1 = w(0), w2 = w(1), w3 = w(2);
 
     Eigen::Matrix3d Pi;
     Pi << 0,            (J23 / J1) * w3,  (J23 / J1) * w2,
@@ -171,14 +175,14 @@ VectorXd StateTransitionFunction(const VectorXd& init_state, const Vector3d& g_s
     Vector3d w = init_state.tail<3>();
     Matrix3d J = Constant.J;
 
-    Matrix4d Omega = Omega_func(g_sensor)
+    Matrix4d Omega = Omega_func(g_sensor);
 
     Vector4d dq = 0.5 * Omega * q;
     Vector4d q_new = q + dq * dt;
     q_new.normalize();
 
     Vector3d torque = Constant.sigma_tau * Vector3d::Ones();  // σ_tau * ones(3,1)
-    Vector3d dw = -J.inverse() * (torque - w.cross(J * w))
+    Vector3d dw = -J.inverse() * (torque - w.cross(J * w));
     Vector3d w_new = w + dw * dt;
 
     VectorXd state_new(7);
@@ -189,7 +193,7 @@ VectorXd StateTransitionFunction(const VectorXd& init_state, const Vector3d& g_s
 
 
 MatrixXd StateTransitionMatrix(const VectorXd& init_state, const Constants& Constant) {
-    Matrix4d Omega = omega_func(init_state);
+    Matrix4d Omega = Omega_func(init_state);
     Eigen::Matrix<double, 4, 3> Xi = Xi_func(init_state);
     Matrix3d Pi = Pi_func(init_state, Constant);
     Eigen::Matrix<double, 3, 4> zeroes = Eigen::Matrix<double, 3, 4>::Zero();
@@ -214,7 +218,7 @@ MatrixXd ProcessNoiseMatrix(double dt, const Constants& Constant) {
     Q.topLeftCorner<4, 4>() = Qq;
     Q.bottomRightCorner<3, 3>() = Qw;
 
-    returnQ
+    return Q;
 }
 
 MatrixXd SensorJacobian(const VectorXd& nts_state, const Vector3d& sensor_vector) {
@@ -253,11 +257,7 @@ Eigen::Matrix<double, 6, 7> MeasurementModelJacobian(const Eigen::Matrix<double,
 }
 
 
-"""EKF"""
-struct EKFResult {
-    Eigen::VectorXd nts_state;  // 7x1
-    Eigen::Matrix<double, 7, 7> nts_P;
-};
+//EKF//
 
 EKFResult ekf(
     const Eigen::VectorXd& init_state,           // 7x1
@@ -308,4 +308,4 @@ EKFResult ekf(
 
     return result;
 }
-"""""""
+////"
