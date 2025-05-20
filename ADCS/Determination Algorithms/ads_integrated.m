@@ -360,8 +360,8 @@ function H = MeasurementModelJacobian(h, nts_state)
     H_acc = SensorJacobian(h(1:3),nts_state);
     H_mag = SensorJacobian(h(4:6),nts_state);
 
-    H = [H_acc eye(3);
-         H_mag eye(3)];
+    H = [H_acc zeros(3,3);
+         H_mag zeros(3,3)];
 end
 
 % Sensor body frame to CubeSat body frame
