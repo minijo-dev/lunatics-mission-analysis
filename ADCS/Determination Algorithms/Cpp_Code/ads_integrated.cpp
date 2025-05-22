@@ -28,11 +28,11 @@ int main() {
 
     // Setup Values - Variable //
     double lat = -33.88893628858434 * M_PI / 180.0;
-    double lon = 151.19446182380247 * M_PI / 180.0;
+    double long = 151.19446182380247 * M_PI / 180.0;
     double alt = 19.8;
     ////
 
-    Vector3d R_ECI = eci_vector(lat, lon);
+    Vector3d R_ECI = eci_vector(lat, long);
     Vector3d a_known = 9.81 * R_ECI.normalized();  // known acceleration at site
 
     Vector3d m_known(0, 0, 1); // known magnetic field (dummy)
