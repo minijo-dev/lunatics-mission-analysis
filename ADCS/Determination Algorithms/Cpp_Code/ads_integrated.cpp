@@ -10,11 +10,22 @@
 #include <vector>
 #include <random>
 #include "ads_helpers.h"
-
+#include <fstream>
 using namespace Eigen;
 using namespace std;
 
 int main() {
+    // CSV file setup
+    std::ofstream file("log.csv");
+    std::ofstream file_true("log_true.csv");
+
+    if (!file.is_open()) {
+        std:cout << "Can't open file \n";
+    }
+
+    file << "q0 q1 q2 q3 wx wy wz\n";
+    file_true << "q0 q1 q2 q3 wx wy wz\n";
+
     // Setup Values - Variable //
     double lat = -33.88893628858434 * M_PI / 180.0;
     double lon = 151.19446182380247 * M_PI / 180.0;
@@ -95,14 +106,15 @@ int main() {
         Eigen::Vector4d quest_quat;
 
         if (count == 0) {
-            if (simp == true)
+            if (simp == true) {
                 Vector4d quest_quat = QUEST_simp(a_known, m_known, a_sensor, m_sensor, Constant);
-            else
+                std::cout << "Should never see me\n";
+            } else {
                 Vector4d quest_quat = QUEST_full(a_known, m_known, a_sensor, m_sensor, Constant);
             init_state.head<4>() = quest_quat;
             init_state.tail<3>() = nts_state.tail<3>();
             init_P = MatrixXd::Identity(7, 7);
-            cout << "QUEST executed\n";
+            std::cout << "QUEST executed\n";}
         } else {
             init_state = nts_state;
             init_P = nts_P;
@@ -112,8 +124,20 @@ int main() {
         nts_state = ekf_result.nts_state;
         nts_P = ekf_result.nts_P;
 
+        VectorXd error = nts_state_true - nts_state;
+
+        file << nts_state.transpose();
+        file << "\n";
+
+        file_true << nts_state_true.transpose();
+        file_true << "\n";
+        
         // q0_plot.push_back(nts_state(2)); // q2
         // time.push_back(time.back() + dt);
     }
+
+    file.close();
+    file_true.close();
+    std::cout << "file logged";
     return 0;
 }
