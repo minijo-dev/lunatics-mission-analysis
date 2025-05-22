@@ -18,6 +18,7 @@ Matrix3d inertial2body(const VectorXd& state) {
     C << 1 - 2*(q2*q2 + q3*q3), 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2),
          2*(q1*q2 + q0*q3), 1 - 2*(q1*q1 + q3*q3), 2*(q2*q3 - q0*q1),
          2*(q1*q3 - q0*q2), 2*(q2*q3 + q0*q1), 1 - 2*(q1*q1 + q2*q2);
+    
     return C;
 }
 
@@ -130,6 +131,7 @@ Matrix4d Omega_func(const Vector3d& omega) {
               omega(0), 0,       omega(2), -omega(1),
               omega(1), -omega(2), 0,       omega(0),
               omega(2), omega(1), -omega(0), 0;
+    
     return Omega;
 
 }
@@ -164,6 +166,7 @@ Eigen::Matrix3d Pi_func(const Eigen::VectorXd& init_state, const Constants& Cons
           (J31 / J2) * w3,  0,            (J31 / J2) * w1,
           (J12 / J3) * w2,  (J12 / J3) * w1,  0;
 
+    
     return Pi;
 }
 
@@ -188,20 +191,21 @@ VectorXd StateTransitionFunction(const VectorXd& init_state, const Vector3d& g_s
     VectorXd state_new(7);
     state_new.head<4>() = q_new;
     state_new.tail<3>() = w_new;
+   
     return state_new;
 }
 
 
-MatrixXd StateTransitionMatrix(const VectorXd& init_state, const Constants& Constant) {
-    Matrix4d Omega = Omega_func(init_state);
+MatrixXd StateTransitionMatrix(const VectorXd& init_state, const Vector3d& g_sensor,const Constants& Constant) {
+    // Vector3d w = init_state.tail<3>();
+    Matrix4d Omega = Omega_func(g_sensor);
     Eigen::Matrix<double, 4, 3> Xi = Xi_func(init_state);
     Matrix3d Pi = Pi_func(init_state, Constant);
     Eigen::Matrix<double, 3, 4> zeroes = Eigen::Matrix<double, 3, 4>::Zero();
-
     Eigen::Matrix<double, 7, 7> F;
     F << 0.5*Omega, 0.5*Xi,
          zeroes, Pi;
-
+    
     return F;
 }
 
@@ -222,10 +226,11 @@ MatrixXd ProcessNoiseMatrix(double dt, const Constants& Constant) {
 }
 
 MatrixXd SensorJacobian(const VectorXd& nts_state, const Vector3d& sensor_vector) {
+  
     double x = sensor_vector(0);
     double y = sensor_vector(1);
     double z = sensor_vector(2);
-
+ 
     double q0 = nts_state(0);
     double q1 = nts_state(1);
     double q2 = nts_state(2);
@@ -244,10 +249,10 @@ MatrixXd SensorJacobian(const VectorXd& nts_state, const Vector3d& sensor_vector
 Eigen::Matrix<double, 6, 7> MeasurementModelJacobian(const Eigen::Matrix<double, 6, 1>& h, const VectorXd& nts_state) {
     Eigen::Vector3d h_acc = h.segment<3>(0); // h(0:2)
     Eigen::Vector3d h_mag = h.segment<3>(3); // h(3:5)
-
-    Eigen::Matrix<double, 3, 4> H_acc = SensorJacobian(h_acc, nts_state);
-    Eigen::Matrix<double, 3, 4> H_mag = SensorJacobian(h_mag, nts_state);
-
+    
+    Eigen::Matrix<double, 3, 4> H_acc = SensorJacobian(nts_state, h_acc);
+    Eigen::Matrix<double, 3, 4> H_mag = SensorJacobian(nts_state, h_mag);
+    
     // Build the full 6x7 H matrix
     Eigen::Matrix<double, 6, 7> H = Eigen::Matrix<double, 6, 7>::Zero();
     H.block<3, 4>(0, 0) = H_acc;
@@ -274,7 +279,7 @@ EKFResult ekf(
 
     // === PREDICT ===
     Eigen::VectorXd nts_state = StateTransitionFunction(init_state, g_sensor, dt, Constant); // 7x1
-    Eigen::Matrix<double, 7, 7> F = StateTransitionMatrix(init_state, Constant);
+    Eigen::Matrix<double, 7, 7> F = StateTransitionMatrix(init_state, g_sensor, Constant);
     Eigen::Matrix<double, 7, 7> Q = ProcessNoiseMatrix(dt, Constant);
     Eigen::Matrix<double, 7, 7> nts_P = F * init_P * F.transpose() + Q;
 
@@ -288,7 +293,6 @@ EKFResult ekf(
 
     Eigen::Matrix<double, 6, 1> h;
     h << a_expected, m_expected;
-
     Eigen::Matrix<double, 6, 7> H = MeasurementModelJacobian(h, nts_state);
     Eigen::Matrix<double, 6, 1> v = z - h;
     Eigen::Matrix<double, 6, 6> S = H * nts_P * H.transpose() + Constant.R;
