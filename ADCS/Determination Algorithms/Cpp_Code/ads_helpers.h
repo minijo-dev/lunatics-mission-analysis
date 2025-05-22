@@ -55,7 +55,7 @@ EKFResult ekf(
 Eigen::VectorXd StateTransitionFunction(const Eigen::VectorXd& init_state, const Eigen::Vector3d& g_sensor,
 double dt, const Constants& Constant);
 
-Eigen::MatrixXd StateTransitionMatrix(const Eigen::VectorXd& init_state, const Constants& Constant);
+Eigen::MatrixXd StateTransitionMatrix(const Eigen::VectorXd& init_state, const Eigen::Vector3d& g_sensor, const Constants& Constant);
 Eigen::MatrixXd ProcessNoiseMatrix(double dt, const Constants& Constant);
 Eigen::MatrixXd SensorJacobian(const Eigen::VectorXd& nts_state, const Eigen::Vector3d& sensor_vector);
 Eigen::Matrix<double, 6, 7> MeasurementModelJacobian(const Eigen::Matrix<double, 6, 1>& h, const Eigen::VectorXd& nts_state);
