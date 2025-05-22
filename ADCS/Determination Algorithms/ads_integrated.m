@@ -19,7 +19,8 @@ m_known = [0;0;1];
 Constant = ConstantClass(); 
 Constant.a = [0.5, 0.5]; % weighting matrix
 Constant.J = diag([0.0017, 0.0015, 0.0022]); % moment of inertia matrix
-Constant.Q = eye(7)*0.01^2; % model noise matrix
+% Constant.Q = eye(7)*1e-7^2; % model noise matrix
+
 Constant.sigma_tau = 1e-7; % external torque disturbances
 Constant.sigma_q = 1e-8; % uncertainty in the linearisation of model
 Constant.sigma_Acc = 0.01; % uncertainty in accelerometer measurements
@@ -367,7 +368,7 @@ end
 % Sensor body frame to CubeSat body frame
 function S2C = sensor2sat(x,y,z)
 % x,y,z are distances
-
+    ...
 
 end
 
