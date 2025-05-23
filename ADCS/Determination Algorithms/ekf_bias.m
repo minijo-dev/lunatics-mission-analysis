@@ -1,5 +1,5 @@
 
-clear all;
+clear all; close all;
 Constant = ConstantClass(); 
 Constant.g = 9.81;
 % Constant.sigma_q = 0.001;
@@ -9,11 +9,11 @@ Constant.g = 9.81;
 Constant.sigma_Qq = 0.00005;
 Constant.sigma_Qb = 0.000001;
 Constant.Q = [Constant.sigma_Qq^2 * eye(4) zeros(4,3);
-              zeros(3,4)                  Constant.sigma_Qb^2 * eye(3)];
+              zeros(3,4)                   Constant.sigma_Qb^2 * eye(3)];
 Constant.sigma_Acc = 0.05;
 Constant.sigma_Mag = 0.02;
 Constant.R = [Constant.sigma_Acc^2 * eye(3) zeros(3,3);
-              zeros(3,3)                  Constant.sigma_Mag^2* eye(3)];
+              zeros(3,3)                    Constant.sigma_Mag^2* eye(3)];
 
 
 % gyro_meas = [0; 0; 0];
@@ -24,8 +24,8 @@ Constant.R = [Constant.sigma_Acc^2 * eye(3) zeros(3,3);
 % timesteps = 1;
 
 init_state = [1;0;0;0;0;0;0];
-init_P = 0.001^2*eye(7);
-% init_P = diag([[1 1 1 1] * 0.001, [1 1 1] * 0.0001] .^ 2);
+% init_P = 0.001^2*eye(7);
+init_P = diag([[1 1 1 1] * 0.001, [1 1 1] * 0.0001] .^ 2);
 
 roll = zeros(100,1);
 pitch= zeros(100,1);
@@ -44,7 +44,7 @@ timesteps = 1;
 % 
 % 
 % 
-for i = 1:100
+for i = 1:1000
     [state(i,:), P, w(i,:), roll(i), pitch(i), yaw(i)] = ekf(init_state, init_P, gyro_meas, acc_meas, mag_meas, mag_dec_meas, prop_time, timesteps, Constant);
     init_state = state(i,:).';
     init_P = P;
@@ -67,6 +67,13 @@ hold off
 figure(3)
 hold on 
 plot(w)
+hold off
+
+figure(4)
+hold on
+plot(state(:,5))
+plot(state(:,6))
+plot(state(:,7))
 
 
 function [state, P, w, roll, pitch, yaw] = ekf(init_state, init_P, gyro_meas, acc_meas, mag_meas, mag_dec_meas, prop_time, timesteps, Constant)
@@ -83,15 +90,14 @@ function [state, P, w, roll, pitch, yaw] = ekf(init_state, init_P, gyro_meas, ac
     % done in small increments to reduce linearisation error
     for i = 1:timesteps
 
-        corr_gyro = CorrectedGyro(gyro_meas, init_state);
-        f = StateTransitionFunction(corr_gyro, init_state);
+        f = StateTransitionFunction(gyro_meas, init_state);
         init_state = init_state + dt*f;
-        init_state(1:4) = unit_vector(init_state(1:4));
+        % init_state(1:4) = unit_vector(init_state(1:4));
 
     end
 
     init_state(1:4) = unit_vector(init_state(1:4));
-    F = StateTransitionMatrix(corr_gyro, init_state);
+    F = StateTransitionMatrix(gyro_meas, init_state);
     init_P = init_P + prop_time* (F*init_P + init_P*F'+ Constant.Q);
 
     %% Update
@@ -114,7 +120,7 @@ function [state, P, w, roll, pitch, yaw] = ekf(init_state, init_P, gyro_meas, ac
     % S = H * init_P * H' + Constant.R;
     % K = init_P * H' * inv(S + 1e-8*eye(6));
 
-    P = (eye(7) - K*H)*init_P+ 1e-6 * eye(7);
+    P = (eye(length(init_state)) - K*H) * init_P;% + 1e-9 * eye(7);
 
     meas = [acc_meas;
             mag_meas];
@@ -164,8 +170,9 @@ function corr_gyro = CorrectedGyro(gyro_meas, init_state)
  
 end
 
-function f = StateTransitionFunction(corr_gyro, init_state)
+function f = StateTransitionFunction(gyro_meas, init_state)
    
+    corr_gyro = CorrectedGyro(gyro_meas, init_state);
     Xi = Xi_func(init_state);
     qdot = 0.5*Xi*corr_gyro;
 
@@ -175,16 +182,20 @@ function f = StateTransitionFunction(corr_gyro, init_state)
          0];
 end
 
-function F = StateTransitionMatrix(corr_gryo, init_state)
-    p = corr_gryo(1);
-    q = corr_gryo(2);
-    r = corr_gryo(3);
+function F = StateTransitionMatrix(gyro_meas, init_state)
+
+    corr_gyro = CorrectedGyro(gyro_meas, init_state);
+
+    p = corr_gyro(1);
+    q = corr_gyro(2);
+    r = corr_gyro(3);
 
     q0 = init_state(1);
     q1 = init_state(2);
     q2 = init_state(3);
     q3 = init_state(4);
 
+    % checked matrix is correct
     F = [0, -0.5*p, -0.5*q, -0.5*r, 0.5*q1, 0.5*q2, 0.5*q3; 
          0.5*p, 0, 0.5*r, -0.5*q, -0.5*q0, 0.5*q3, -0.5*q2; 
          0.5*q, -0.5*r, 0, 0.5*p, -0.5*q3, -0.5*q0, 0.5*q1; 
@@ -211,16 +222,16 @@ end
 
 function acc_est = Acc2Body(init_state, g)
 
-    % q0 = init_state(1);
-    % q1 = init_state(2);
-    % q2 = init_state(3);
-    % q3 = init_state(4);
+    q0 = init_state(1);
+    q1 = init_state(2);
+    q2 = init_state(3);
+    q3 = init_state(4);
 
-    % acc_est = [-2 * g * (q1 * q3 - q2 * q0);
-    %            - 2 * g * (q2 * q3 + q1 * q0);
-    %            - g * (1 - 2 * (q1 * q1 + q2 * q2))];
-    R = inertial2body(init_state);
-    acc_est = R*[0; 0; g];
+    acc_est = [-2 * g * (q1 * q3 - q2 * q0);
+               - 2 * g * (q2 * q3 + q1 * q0);
+               - g * (1 - 2 * (q1 * q1 + q2 * q2))];
+    % R = inertial2body(init_state);
+    % acc_est = R*[0; 0; -g];
 
 end
 
@@ -259,7 +270,7 @@ function H = SensorJacobian(init_state, mag_dec_meas, g)
 
     H = [ 2 * g * q2, -2 * g * q3,  2 * g * q0, -2 * g * q1, 0, 0, 0;
          -2 * g * q1, -2 * g * q0, -2 * g * q3, -2 * g * q2, 0, 0, 0;
-          0, 4 * g * q1, 4 * g * q2, 0, 0, 0, 0; ...
+          0, 4 * g * q1, 4 * g * q2, 0, 0, 0, 0;
           2 * q3 * smag, 2 * q2 * smag, 2 * q1 * smag - 4 * q2 * cmag, 2 * q0 * smag - 4 * q3 * cmag, 0, 0, 0; 
          -2 * q3 * cmag, 2 * q2 * cmag - 4 * q1 * smag, 2 * q1 * cmag, -2 * q0 * cmag - 4 * q3 * smag, 0, 0, 0; 
           2 * q2 * cmag - 2 * q1 * smag, 2 * q3 * cmag - 2 * q0 * smag, 2 * q0 * cmag + 2 * q3 * smag, 2 * q1 * cmag + 2 * q2 * smag, 0, 0, 0];
