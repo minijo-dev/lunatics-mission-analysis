@@ -27,7 +27,7 @@ def plot_spectrum(filename, rows_to_plot=None):
 
     # Extract wavelengths from header row
     wavelengths = [int(col.strip('nm')) for col in data.columns]
-
+    print(wavelengths)
     # For Gaussian
     FWHM = 20
     sigma = FWHM / (2 * np.sqrt(2 * np.log(2)))
@@ -184,5 +184,9 @@ if __name__ == "__main__":
     filepath = Path(__file__).parent
     filename = filepath / 'spec_values.csv'
 
+    wavelengths = [410, 435, 460, 485, 510, 535, 560, 585, 610, 645, 680, 705, 730, 760, 810, 860, 900, 940]
+
     plotting.startup_plotting(font_size=14, line_width=1.5, output_dpi=600, tex_backend=True)
     plot_spectrum(filename, [2])
+
+
