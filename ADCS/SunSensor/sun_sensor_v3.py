@@ -7,6 +7,8 @@ A class and functions to simulate a sun sensor system on a CubeSat.
 
 # MODULES
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 # CLASS
 class SunSensor:
@@ -75,7 +77,6 @@ class SunSensor:
     def get_normal(self):
         """Get the normal vector (z-axis, cone axis) of the sensor in the body frame."""
         return self.z_in_body
-
 
 
 # FIND SUN VECTOR
@@ -149,18 +150,7 @@ def find_sun(sensors, readings, X0,
 
         return Xhat, selected_sensors
     
-# def model_sun_sensors(sensors, sat_dim):
-#     """Model the Cube-Sat and the Sun Sensor positions/local axes.
-    
-#     Args:
-#         sensors (list): List of SunSensor objects
-#         sat_dim (list): Dimensions of the Cube-Sat [x, y, z] (m)
-#     """
-
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
+# Model the sun sensors on the CubeSat
 def model_sun_sensors(sensors, sat_dim):
     """
     Visualises the CubeSat and sun sensors in 3D.
@@ -194,7 +184,7 @@ def model_sun_sensors(sensors, sat_dim):
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
     ax.set_title("CubeSat Sun Sensor Layout")
-    
+
     # Draw the CubeSat body as a wireframe cube
     def draw_cube(xdim, ydim, zdim):
         r = [0, xdim]
@@ -234,6 +224,7 @@ def model_sun_sensors(sensors, sat_dim):
     ax.set_xlabel('X (m)')
     ax.set_ylabel('Y (m)')
     ax.set_zlabel('Z (m)')
+    set_axes_equal(ax)
     ax.legend()
     plt.tight_layout()
     plt.show()
@@ -242,9 +233,9 @@ def model_sun_sensors(sensors, sat_dim):
 if __name__ == "__main__":
 
     sensor1 = SunSensor(1, "Top", [0.02, 0.05, 0.2], 0, 0, 0)
-    sensor2 = SunSensor(2, "Right", [0, 0.05, 0.11], 0, -90, 0)
-    sensor3 = SunSensor(3, "Left", [0.1, 0.05, 0.11], 0, 90, 0)
-    sensor4 = SunSensor(4, "Back", [0.05, 0.1, 0.11], -90, 0, 0)
+    sensor2 = SunSensor(2, "Right", [0, 0.05, 0.11], 0, 90, 0)
+    sensor3 = SunSensor(3, "Left", [0.1, 0.05, 0.11], 0, -90, 0)
+    sensor4 = SunSensor(4, "Back", [0.05, 0.1, 0.11], 90, 0, 0)
     sensor5 = SunSensor(5, "Bottom", [0.02, 0.05, 0], 180, 0, 0)
 
     sensors = [sensor1, sensor2, sensor3, sensor4, sensor5]
