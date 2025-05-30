@@ -113,11 +113,14 @@ def plot_spectrum(filename, wavelengths):
         return [scatter, time_text] + gauss_lines
 
     ani = animation.FuncAnimation(fig, update, frames=len(data), init_func=init, blit=False, repeat=True, interval=5)
+
+    ani.save("spectrum.gif", fps=4)
+
     plt.show()
 
 if __name__ == "__main__":
     filepath = Path(__file__).parent
-    filename = filepath / 'output.csv'
+    filename = filepath / 'output1.csv'
 
     wavelengths = [410, 435, 460, 485, 510, 535, 560, 585, 610, 645, 680, 705, 730, 760, 810, 860, 900, 940]
 

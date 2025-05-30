@@ -1,0 +1,1 @@
+/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/sun_sensor.dir/sun_sensor_cpp.cpp.o -o sun_sensor

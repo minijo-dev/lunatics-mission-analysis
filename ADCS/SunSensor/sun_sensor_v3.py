@@ -78,12 +78,10 @@ class SunSensor:
         """Get the normal vector (z-axis, cone axis) of the sensor in the body frame."""
         return self.z_in_body
 
-
-# FIND SUN VECTOR
+# Find Sun Vector
 def find_sun(sensors, readings, X0, 
              Srel_tol = 0.1, max_iter=1000, tol=1e-6, learning_rate=0.1):
     """
-    
     Args:
         sensors (list): List of SunSensor objects.
         reading (np array): The S_rel readings for each sensor.
@@ -228,7 +226,66 @@ def model_sun_sensors(sensors, sat_dim):
     ax.legend()
     plt.tight_layout()
     plt.show()
-    
+
+# Expected readings
+def expected_readings(sensors, sun_vec, exact=True, noise=0.01, max_FOV=80):
+    """Compute the expected readings of the sensors based on the sun direction vector.
+    Args:
+        sensors (list): List of SunSensor objects.
+        sun_vec (np array): The sun direction vector in the body frame.
+        exact (bool): If True, the exact readings are computed. If False, the readings are affected by noise.
+        noise (float): The magnitude of noise to be added to the readings.
+        max_FOV (float): The maximum field of view of the sensors (degrees).
+    Returns:
+        readings (np array): The expected readings of the sensors.
+    """
+
+    # Convert max_FOV to radians
+    max_FOV = np.deg2rad(max_FOV)
+
+    # Normalise sun direction vector
+    sun_vec = sun_vec / np.linalg.norm(sun_vec)
+
+    # Initialise readings
+    readings = np.zeros(len(sensors))
+
+    for i, sensor in enumerate(sensors):
+        # Get sensor normal in body frame
+        n_vec = sensor.get_normal()
+        
+        # Compute angle between sun vector and sensor normal
+        phi = np.arccos(np.dot(sun_vec, n_vec))
+
+        # Check if angle is within the field of view
+        if np.abs(phi) < max_FOV:
+            # Compute S_rel
+            readings[i] = np.cos(phi)
+            if not exact:
+                # Add noise to the readings
+                readings[i] += np.random.normal(0, noise)
+                # Ensure readings are non-negative
+                readings[i] = max(0, readings[i])
+        else:
+            readings[i] = np.random.normal(0, noise)
+            readings[i] = max(0, readings[i])
+
+    if exact: 
+        print(f"Expected readings for Sun vector {sun_vec}: {readings}")
+    else:
+        print(f"Noisy expected readings for Sun vector {sun_vec}: {readings}")
+    return readings
+
+# Calibrate sensor readings
+def calibrate_measurements(measurements, max_measure):
+    """Calibrates the sensor readings based on reading at 90deg"""
+    readings = [m/max_measure for m in measurements]
+    # Adjust if any are maximised
+    for i in len(readings):
+        if readings[i] > 1.0:
+            print("Warning: S_rel > 1.0 detected!")
+            readings[i] = 0
+    return readings
+
 
 if __name__ == "__main__":
 
